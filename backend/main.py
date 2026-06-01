@@ -29,7 +29,7 @@ origins = [
     "http://127.0.0.1:8000",
     "http://frontend:3000",
     os.getenv("FRONTEND_URL", "http://localhost:3000"),
-    "inventory-management-ijyz.vercel.app"
+    "https://inventory-management-ijyz.vercel.app"
 ]
 
 app.add_middleware(
