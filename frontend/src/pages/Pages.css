@@ -1,0 +1,13 @@
+/* Page-specific styles */
+
+.form-container {
+  background-color: #f7fafc;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #667eea;
+}
+
+.form-container h2 {
+  margin-bottom: 1.5rem;
+}

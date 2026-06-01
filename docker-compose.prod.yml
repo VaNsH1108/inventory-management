@@ -1,0 +1,72 @@
+version: '3.8'
+
+# Production Docker Compose Configuration
+# Use this for production deployments
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: inventory_db_prod
+    environment:
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-in-production}
+      POSTGRES_DB: inventory_db
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - inventory-network
+
+  backend:
+    image: ${DOCKER_REGISTRY:-registry.hub.docker.com}/inventory-backend:${BACKEND_VERSION:-latest}
+    container_name: inventory_backend_prod
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-user}:${DB_PASSWORD:-change-me-in-production}@db:5432/inventory_db
+      FRONTEND_URL: ${FRONTEND_URL}
+      DEBUG: "False"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - inventory-network
+
+  frontend:
+    image: ${DOCKER_REGISTRY:-registry.hub.docker.com}/inventory-frontend:${FRONTEND_VERSION:-latest}
+    container_name: inventory_frontend_prod
+    environment:
+      REACT_APP_API_URL: ${BACKEND_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - inventory-network
+
+volumes:
+  postgres_prod_data:
+    driver: local
+
+networks:
+  inventory-network:
+    driver: bridge
